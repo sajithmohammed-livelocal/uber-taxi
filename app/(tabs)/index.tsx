@@ -1,11 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Search, Clock, Car, Shield, Star } from 'lucide-react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { LocationService } from '@/services/LocationService';
 import { TripService } from '@/services/TripService';
 import { useTranslation } from 'react-i18next';
+
+// Conditional import for react-native-maps (not available on web)
+let MapView: any = null;
+let Marker: any = null;
+let PROVIDER_GOOGLE: any = null;
+
+if (Platform.OS !== 'web') {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+}
+
+// Web fallback component for MapView
+const WebMapFallback = ({ style }: { style: any }) => (
+  <View style={[style, { backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' }]}>
+    <MapPin size={48} color="#6B7280" />
+    <Text style={{ color: '#6B7280', marginTop: 8 }}>Map view (Web preview)</Text>
+  </View>
+);
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -69,23 +88,27 @@ export default function HomeScreen() {
 
       <View style={styles.mapContainer}>
         {currentLocation && (
-          <MapView
-            provider={PROVIDER_GOOGLE}
-            style={styles.map}
-            region={{
-              latitude: currentLocation.latitude,
-              longitude: currentLocation.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            showsUserLocation={true}
-            showsMyLocationButton={false}
-          >
-            <Marker
-              coordinate={currentLocation}
-              title={t('labels.yourLocation')}
-            />
-          </MapView>
+          Platform.OS === 'web' ? (
+            <WebMapFallback style={styles.map} />
+          ) : (
+            <MapView
+              provider={PROVIDER_GOOGLE}
+              style={styles.map}
+              region={{
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              showsUserLocation={true}
+              showsMyLocationButton={false}
+            >
+              <Marker
+                coordinate={currentLocation}
+                title={t('labels.yourLocation')}
+              />
+            </MapView>
+          )
         )}
         
         <View style={styles.mapOverlay}>
